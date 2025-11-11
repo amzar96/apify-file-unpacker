@@ -1,0 +1,14 @@
+{
+	"actorSpecification": 1,
+	"name": "file-unpacker",
+	"title": "File Unpacker",
+	"description": "Downloads and extracts archive files from URLs. Supports ZIP, TAR, TAR.GZ, TAR.BZ2, and 7Z formats. Outputs the list of extracted files to a dataset.",
+	"version": "1.1",
+	"buildTag": "latest",
+	"meta": {
+		"templateId": "python-empty",
+		"model": "<FILL-IN-MODEL>"
+	},
+	"dockerfile": "../Dockerfile",
+	"output": "./OUTPUT_SCHEMA.json"
+}

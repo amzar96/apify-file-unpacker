@@ -1,0 +1,14 @@
+{
+    "actorOutputSchemaVersion": 1,
+    "title": "File Unpacker Output",
+    "description": "Output of the File Unpacker Actor containing extracted file information",
+    "type": "object",
+    "properties": {
+        "results": {
+            "type": "string",
+            "title": "Extracted Files",
+            "description": "List of all extracted files with metadata",
+            "template": "{{links.apiDefaultDatasetUrl}}/items"
+        }
+    }
+}
