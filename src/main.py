@@ -93,10 +93,8 @@ async def download_and_extract_file(file_url: str, output_dir: Path) -> list[str
 
 async def main() -> None:
     async with Actor:
-        # Get input from the Actor
         actor_input = await Actor.get_input() or {}
 
-        # Extract input values with defaults
         file_url = actor_input.get('fileUrl')
         folder_path = actor_input.get('folderPath', './storage/extracted')
         max_file_size_mb = actor_input.get('maxFileSizeMb', 50)
