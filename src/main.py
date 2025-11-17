@@ -115,15 +115,14 @@ async def main() -> None:
         if len(extracted_files) > 10:
             Actor.log.info(f"  ... and {len(extracted_files) - 10} more files")
 
-        # Push results to the dataset
-        result = {
-            'fileUrl': file_url,
-            'outputPath': str(output_dir),
-            'totalFiles': len(extracted_files),
-            'extractedFiles': extracted_files,
-            'maxFileSizeMb': max_file_size_mb,
-            'fileNamePrefix': file_name_prefix
-        }
+        for file_path in extracted_files:
+            result = {
+                'fileUrl': file_url,
+                'outputPath': str(output_dir),
+                'extractedFile': file_path,
+                'maxFileSizeMb': max_file_size_mb,
+                'fileNamePrefix': file_name_prefix
+            }
+            await Actor.push_data(result)
 
-        await Actor.push_data(result)
         Actor.log.info(f"Results pushed to dataset: {len(extracted_files)} files extracted")
