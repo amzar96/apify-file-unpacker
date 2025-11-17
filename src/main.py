@@ -6,89 +6,132 @@ import zipfile
 import tarfile
 import py7zr
 import io
+import os
 from pathlib import Path
 
 
-def extract_archive(data: bytes, file_url: str, output_dir: Path) -> list[str]:
-    extracted_files = []
-    output_dir.mkdir(parents=True, exist_ok=True)
+def get_mime_type(filename: str) -> str:
+    ext = filename.lower().split('.')[-1]
+    mime_types = {
+        'pdf': 'application/pdf',
+        'mp3': 'audio/mpeg',
+        'mp4': 'video/mp4',
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'png': 'image/png',
+        'gif': 'image/gif',
+        'svg': 'image/svg+xml',
+        'zip': 'application/zip',
+        'tar': 'application/x-tar',
+        'gz': 'application/gzip',
+        '7z': 'application/x-7z-compressed',
+        'txt': 'text/plain',
+        'html': 'text/html',
+        'css': 'text/css',
+        'js': 'application/javascript',
+        'json': 'application/json',
+        'xml': 'application/xml',
+        'csv': 'text/csv',
+        'doc': 'application/msword',
+        'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'xls': 'application/vnd.ms-excel',
+        'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'ppt': 'application/vnd.ms-powerpoint',
+        'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    }
+    return mime_types.get(ext, 'application/octet-stream')
 
+
+def get_file_info(file_url: str) -> dict:
     url_lower = file_url.lower()
 
+    if url_lower.endswith(".zip"):
+        return {"format": "zip", "mode": None}
+    elif url_lower.endswith((".tar.gz", ".tgz")):
+        return {"format": "tar", "mode": "r:gz"}
+    elif url_lower.endswith((".tar.bz2", ".tbz2")):
+        return {"format": "tar", "mode": "r:bz2"}
+    elif url_lower.endswith(".tar"):
+        return {"format": "tar", "mode": "r"}
+    elif url_lower.endswith(".7z"):
+        return {"format": "7z", "mode": None}
+    else:
+        raise ValueError(f"Unsupported file format: {file_url}")
+
+
+async def extract_and_store_files(data: bytes, file_url: str) -> list[dict]:
+    file_info = get_file_info(file_url)
+    format_type = file_info["format"]
+    mode = file_info["mode"]
+
+    extracted_files_info = []
+    store = await Actor.open_key_value_store()
+
     try:
-        if url_lower.endswith(".zip"):
-            with zipfile.ZipFile(io.BytesIO(data)) as zf:
-                zf.extractall(output_dir)
-                extracted_files = [str(output_dir / name) for name in zf.namelist()]
-                Actor.log.info(
-                    f"Extracted {len(extracted_files)} files from ZIP archive"
-                )
+        if format_type == "zip":
+            with zipfile.ZipFile(io.BytesIO(data)) as archive:
+                for member in archive.filelist:
+                    if not member.is_dir():
+                        file_content = archive.read(member.filename)
+                        await Actor.set_value(
+                            member.filename,
+                            file_content,
+                            content_type=get_mime_type(member.filename)
+                        )
+                        download_url = await store.get_public_url(member.filename)
+                        extracted_files_info.append({
+                            'filename': member.filename,
+                            'size': member.file_size,
+                            'download_url': download_url,
+                            'mime_type': get_mime_type(member.filename)
+                        })
+                Actor.log.info(f"Extracted {len(extracted_files_info)} files from ZIP archive")
 
-        elif url_lower.endswith((".tar.gz", ".tgz")):
-            with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as tf:
-                tf.extractall(output_dir)
-                extracted_files = [
-                    str(output_dir / member.name) for member in tf.getmembers()
-                ]
-                Actor.log.info(
-                    f"Extracted {len(extracted_files)} files from TAR.GZ archive"
-                )
+        elif format_type == "tar":
+            with tarfile.open(fileobj=io.BytesIO(data), mode=mode) as archive:
+                for member in archive.getmembers():
+                    if member.isfile():
+                        file_content = archive.extractfile(member).read()
+                        await Actor.set_value(
+                            member.name,
+                            file_content,
+                            content_type=get_mime_type(member.name)
+                        )
+                        download_url = await store.get_public_url(member.name)
+                        extracted_files_info.append({
+                            'filename': member.name,
+                            'size': member.size,
+                            'download_url': download_url,
+                            'mime_type': get_mime_type(member.name)
+                        })
+                Actor.log.info(f"Extracted {len(extracted_files_info)} files from TAR archive")
 
-        elif url_lower.endswith((".tar.bz2", ".tbz2")):
-            with tarfile.open(fileobj=io.BytesIO(data), mode="r:bz2") as tf:
-                tf.extractall(output_dir)
-                extracted_files = [
-                    str(output_dir / member.name) for member in tf.getmembers()
-                ]
-                Actor.log.info(
-                    f"Extracted {len(extracted_files)} files from TAR.BZ2 archive"
-                )
-
-        elif url_lower.endswith(".tar"):
-            with tarfile.open(fileobj=io.BytesIO(data), mode="r") as tf:
-                tf.extractall(output_dir)
-                extracted_files = [
-                    str(output_dir / member.name) for member in tf.getmembers()
-                ]
-                Actor.log.info(
-                    f"Extracted {len(extracted_files)} files from TAR archive"
-                )
-
-        elif url_lower.endswith(".7z"):
-            with py7zr.SevenZipFile(io.BytesIO(data), mode="r") as szf:
-                szf.extractall(output_dir)
-                extracted_files = [str(output_dir / name) for name in szf.getnames()]
-                Actor.log.info(
-                    f"Extracted {len(extracted_files)} files from 7Z archive"
-                )
-        else:
-            raise ValueError(f"Unsupported file format: {file_url}")
+        elif format_type == "7z":
+            with py7zr.SevenZipFile(io.BytesIO(data), mode="r") as archive:
+                all_files = archive.readall()
+                for filename, bio in all_files.items():
+                    if not filename.endswith('/'):
+                        file_content = bio.read()
+                        await Actor.set_value(
+                            filename,
+                            file_content,
+                            content_type=get_mime_type(filename)
+                        )
+                        download_url = await store.get_public_url(filename)
+                        file_size = len(file_content)
+                        extracted_files_info.append({
+                            'filename': filename,
+                            'size': file_size,
+                            'download_url': download_url,
+                            'mime_type': get_mime_type(filename)
+                        })
+                Actor.log.info(f"Extracted {len(extracted_files_info)} files from 7Z archive")
 
     except Exception as e:
         Actor.log.error(f"Failed to extract archive: {str(e)}")
         raise
 
-    return extracted_files
-
-
-async def download_and_extract_file(file_url: str, output_dir: Path) -> list[str]:
-    Actor.log.info(f"Downloading file from: {file_url}")
-
-    try:
-        with urllib.urlopen(file_url) as response:
-            data = response.read()
-            Actor.log.info(f"Downloaded {len(data)} bytes")
-
-        extracted_files = extract_archive(data, file_url, output_dir)
-
-        Actor.log.info(
-            f"Successfully extracted {len(extracted_files)} files to {output_dir}"
-        )
-        return extracted_files
-
-    except Exception as e:
-        Actor.log.error(f"Failed to download and extract file: {str(e)}")
-        raise
+    return extracted_files_info
 
 
 async def main() -> None:
@@ -96,33 +139,31 @@ async def main() -> None:
         actor_input = await Actor.get_input() or {}
 
         file_url = actor_input.get('file_url')
-        folder_path = actor_input.get('folder_path', './storage/extracted')
-        max_file_size_mb = actor_input.get('max_file_size_mb', 50)
-        file_name_prefix = actor_input.get('file_name_prefix')
 
         if not file_url:
             raise ValueError("file_url is required in the input")
 
         Actor.log.info(f"Ready to unpack file from URL: {file_url}")
 
-        output_dir = Path(folder_path)
+        Actor.log.info(f"Downloading file from: {file_url}")
 
-        extracted_files = await download_and_extract_file(file_url, output_dir)
+        try:
+            with urllib.urlopen(file_url) as response:
+                data = response.read()
+                Actor.log.info(f"Downloaded {len(data)} bytes")
+        except Exception as e:
+            Actor.log.error(f"Failed to download file: {str(e)}")
+            raise
+
+        extracted_files = await extract_and_store_files(data, file_url)
 
         Actor.log.info(f"Extraction complete. Files extracted:")
-        for file_path in extracted_files[:10]:
-            Actor.log.info(f"  - {file_path}")
+        for file_info in extracted_files[:10]:
+            Actor.log.info(f"  - {file_info['filename']} ({file_info['size']} bytes)")
         if len(extracted_files) > 10:
             Actor.log.info(f"  ... and {len(extracted_files) - 10} more files")
 
-        for file_path in extracted_files:
-            result = {
-                'file_url': file_url,
-                'output_path': str(output_dir),
-                'extracted_file': file_path,
-                'max_file_size_mb': max_file_size_mb,
-                'file_name_prefix': file_name_prefix
-            }
-            await Actor.push_data(result)
+        for file_info in extracted_files:
+            await Actor.push_data(file_info)
 
         Actor.log.info(f"Results pushed to dataset: {len(extracted_files)} files extracted")
