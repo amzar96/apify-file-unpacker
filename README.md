@@ -16,15 +16,38 @@ Downloads and extracts archive files from URLs. Supports multiple archive format
 
 ## Input
 
-- **fileUrl** (required): URL of the archive file to download
-- **folderPath** (optional): Output directory (default: `./storage/extracted`)
-- **maxFileSizeMb** (optional): Maximum file size in MB (default: 50)
-- **fileNamePrefix** (optional): Prefix for extracted file names
+- **file_url** (required): URL of the archive file to download
+- **folder_path** (optional): Output directory (default: `./storage/extracted`)
+- **max_file_size_mb** (optional): Maximum file size in MB (default: 50)
+- **file_name_prefix** (optional): Prefix for extracted file names
 
 ## Output
 
-The Actor outputs a dataset with:
-- `fileUrl`: The source URL
-- `outputPath`: Where files were extracted
-- `totalFiles`: Number of extracted files
-- `extractedFiles`: Array of all file paths
+The Actor outputs a dataset with one record per extracted file containing:
+- `file_url`: The source archive URL
+- `output_path`: Where files were extracted
+- `extracted_file`: Path to the individual extracted file
+- `max_file_size_mb`: Maximum file size setting used
+- `file_name_prefix`: File name prefix (if provided)
+
+## Example Input
+
+```json
+{
+  "file_url": "https://example.com/archive.zip",
+  "folder_path": "./storage/extracted",
+  "max_file_size_mb": 50
+}
+```
+
+## Example Output
+
+```json
+{
+  "file_url": "https://example.com/archive.zip",
+  "output_path": "storage/extracted",
+  "extracted_file": "storage/extracted/myfile.txt",
+  "max_file_size_mb": 50,
+  "file_name_prefix": null
+}
+```
