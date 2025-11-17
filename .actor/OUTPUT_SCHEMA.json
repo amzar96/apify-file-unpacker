@@ -1,13 +1,19 @@
 {
     "actorOutputSchemaVersion": 1,
     "title": "File Unpacker Output",
-    "description": "Output of the File Unpacker Actor containing extracted file information",
+    "description": "Extracted files stored in Key-Value Store with metadata in Dataset",
     "type": "object",
     "properties": {
-        "extractedFiles": {
+        "files": {
             "type": "string",
             "title": "Extracted Files",
-            "description": "List of files extracted from the archive",
+            "description": "All extracted files with download URLs",
+            "template": "{{links.apiDefaultKeyValueStoreUrl}}/keys"
+        },
+        "metadata": {
+            "type": "string",
+            "title": "File Metadata",
+            "description": "File information with download URLs, sizes, and MIME types",
             "template": "{{links.apiDefaultDatasetUrl}}/items"
         }
     }
