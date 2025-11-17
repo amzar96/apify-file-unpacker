@@ -4,30 +4,11 @@
     "description": "Output of the File Unpacker Actor containing extracted file information",
     "type": "object",
     "properties": {
-        "fileUrl": {
+        "extractedFiles": {
             "type": "string",
-            "title": "Source File URL",
-            "description": "The URL of the archive file that was downloaded and extracted"
-        },
-        "outputPath": {
-            "type": "string",
-            "title": "Output Directory",
-            "description": "The directory where the files were extracted"
-        },
-        "extractedFile": {
-            "type": "string",
-            "title": "Extracted File Path",
-            "description": "Path to the extracted file"
-        },
-        "maxFileSizeMb": {
-            "type": "number",
-            "title": "Max File Size (MB)",
-            "description": "Maximum allowed file size in megabytes"
-        },
-        "fileNamePrefix": {
-            "type": ["string", "null"],
-            "title": "File Name Prefix",
-            "description": "Optional prefix for file names"
+            "title": "Extracted Files",
+            "description": "List of files extracted from the archive",
+            "template": "{{links.apiDefaultDatasetUrl}}/items"
         }
     }
 }

@@ -3,21 +3,21 @@
     "type": "object",
     "schemaVersion": 1,
     "properties": {
-        "fileUrl": {
+        "file_url": {
             "title": "File URL",
             "type": "string",
             "description": "URL of the archive file to download and extract (supports .zip, .tar, .tar.gz, .tgz, .tar.bz2, .tbz2, .7z)",
             "editor": "textfield",
             "example": "https://example.com/archive.zip"
         },
-        "folderPath": {
+        "folder_path": {
             "title": "Output Folder Path",
             "type": "string",
             "description": "Path where extracted files will be saved (default: ./storage/extracted)",
             "editor": "textfield",
             "default": "./storage/extracted"
         },
-        "maxFileSizeMb": {
+        "max_file_size_mb": {
             "title": "Max File Size (MB)",
             "type": "integer",
             "description": "Maximum file size in megabytes to process",
@@ -25,12 +25,12 @@
             "default": 50,
             "minimum": 1
         },
-        "fileNamePrefix": {
+        "file_name_prefix": {
             "title": "File Name Prefix",
             "type": "string",
             "description": "Optional prefix to add to extracted file names",
             "editor": "textfield"
         }
     },
-    "required": ["fileUrl"]
+    "required": ["file_url"]
 }

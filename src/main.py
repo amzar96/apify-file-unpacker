@@ -95,13 +95,13 @@ async def main() -> None:
     async with Actor:
         actor_input = await Actor.get_input() or {}
 
-        file_url = actor_input.get('fileUrl')
-        folder_path = actor_input.get('folderPath', './storage/extracted')
-        max_file_size_mb = actor_input.get('maxFileSizeMb', 50)
-        file_name_prefix = actor_input.get('fileNamePrefix')
+        file_url = actor_input.get('file_url')
+        folder_path = actor_input.get('folder_path', './storage/extracted')
+        max_file_size_mb = actor_input.get('max_file_size_mb', 50)
+        file_name_prefix = actor_input.get('file_name_prefix')
 
         if not file_url:
-            raise ValueError("fileUrl is required in the input")
+            raise ValueError("file_url is required in the input")
 
         Actor.log.info(f"Ready to unpack file from URL: {file_url}")
 
@@ -117,11 +117,11 @@ async def main() -> None:
 
         for file_path in extracted_files:
             result = {
-                'fileUrl': file_url,
-                'outputPath': str(output_dir),
-                'extractedFile': file_path,
-                'maxFileSizeMb': max_file_size_mb,
-                'fileNamePrefix': file_name_prefix
+                'file_url': file_url,
+                'output_path': str(output_dir),
+                'extracted_file': file_path,
+                'max_file_size_mb': max_file_size_mb,
+                'file_name_prefix': file_name_prefix
             }
             await Actor.push_data(result)
 
