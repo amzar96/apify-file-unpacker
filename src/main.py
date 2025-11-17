@@ -10,6 +10,10 @@ import os
 from pathlib import Path
 
 
+def sanitize_key_name(filename: str) -> str:
+    return filename.replace('/', '__')
+
+
 def get_mime_type(filename: str) -> str:
     ext = filename.lower().split('.')[-1]
     mime_types = {
@@ -73,12 +77,13 @@ async def extract_and_store_files(data: bytes, file_url: str) -> list[dict]:
                 for member in archive.filelist:
                     if not member.is_dir():
                         file_content = archive.read(member.filename)
+                        key_name = sanitize_key_name(member.filename)
                         await Actor.set_value(
-                            member.filename,
+                            key_name,
                             file_content,
                             content_type=get_mime_type(member.filename)
                         )
-                        download_url = await store.get_public_url(member.filename)
+                        download_url = await store.get_public_url(key_name)
                         extracted_files_info.append({
                             'filename': member.filename,
                             'size': member.file_size,
@@ -92,12 +97,13 @@ async def extract_and_store_files(data: bytes, file_url: str) -> list[dict]:
                 for member in archive.getmembers():
                     if member.isfile():
                         file_content = archive.extractfile(member).read()
+                        key_name = sanitize_key_name(member.name)
                         await Actor.set_value(
-                            member.name,
+                            key_name,
                             file_content,
                             content_type=get_mime_type(member.name)
                         )
-                        download_url = await store.get_public_url(member.name)
+                        download_url = await store.get_public_url(key_name)
                         extracted_files_info.append({
                             'filename': member.name,
                             'size': member.size,
@@ -112,12 +118,13 @@ async def extract_and_store_files(data: bytes, file_url: str) -> list[dict]:
                 for filename, bio in all_files.items():
                     if not filename.endswith('/'):
                         file_content = bio.read()
+                        key_name = sanitize_key_name(filename)
                         await Actor.set_value(
-                            filename,
+                            key_name,
                             file_content,
                             content_type=get_mime_type(filename)
                         )
-                        download_url = await store.get_public_url(filename)
+                        download_url = await store.get_public_url(key_name)
                         file_size = len(file_content)
                         extracted_files_info.append({
                             'filename': filename,
